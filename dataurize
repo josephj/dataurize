@@ -1,0 +1,60 @@
+#!/usr/bin/php
+<?php
+/**
+ * dataurize - Command line interface for transforming image to DataURI tool.
+ *
+ * @author Joseph Chiang <josephj6802@gmail.com>
+ * @package dataurize
+ * @link http://muchiiilla.dlink.com.tw/projects/muchiii/wiki/Engineering/DataUrize
+ *
+ * ./dataurize ~/miiicasa/static/bar/layout-skin.css http://a.mimgs.com > /tmp/dataurize
+ */
+
+$cmd  = $argv[0];
+$file = $argv[1];
+$base = $argv[2];
+
+if ( ! file_exists($file))
+{
+    echo "file not exists";
+    exit;
+}
+
+$content = file_get_contents($file);
+$pattern = '/background.*:.*url\(([^\)]+)\)/';
+preg_match_all($pattern, $content, $data);
+$attrs = $data[0];
+$urls = $data[1];
+$uris = array();
+
+// Build temporary directory 
+$tmp_path = microtime();
+$tmp_path = substr(md5($tmp_path), 0, 8);
+$tmp_path = "/tmp/$tmp_path/";
+mkdir($tmp_path);
+
+for ($i = 0, $j = count($attrs); $i < $j; $i++)
+{
+    $url = $urls[$i];
+    $attr = $attrs[$i];
+    $target = "{$base}{$url}";
+    $filename = pathinfo($target);
+    $filename = "{$filename["filename"]}.{$filename["extension"]}";
+    $cmd = "curl $target > {$tmp_path}{$filename}";
+    exec($cmd, $return, $error);
+    $tempfile = $tmp_path.$filename;
+    $cmd = "/usr/bin/identify -quiet -format \"%m\" $tempfile";
+    exec("/usr/bin/identify -quiet -format \"%m\" $tempfile", $return, $error);                                    
+    $type = ($error === 0) ? mb_strtolower($return[0]) : ""; 
+    $handle = fopen($tempfile,'rb');
+    $file_content = fread($handle, filesize($tempfile));
+    fclose($handle);
+    $encode = /*chunk_split*/(base64_encode($file_content)); 
+    $uris[$i] = str_replace($url, "data:image/$type;base64," . $encode, $attr);
+    $uris[$i].= ";*background-image:url(mhtml:{$base}{$file}!{$filename})"; 
+    $mhtmls[] = "Content-Location:{$filename}\nContent-Transfer-Encoding:base64\n\n" . $encode . "\n--_MY_BOUNDARY_SEPARATOR--\n";
+}
+$content = "/*\nContent-Type: multipart/related; boundary=\"_MY_BOUNDARY_SEPARATOR\"\n\n--_MY_BOUNDARY_SEPARATOR\n" . implode($mhtmls, "") . "*/\n\n" . $content;
+$content = str_replace($attrs, $uris, $content);
+echo $content;
+?>
