@@ -1,0 +1,22 @@
+Using DataURI instead of binary images is a very good idea in web development.
+One binary image means an extra HTTP request in your request.
+It's easy to have 30+ images on a single page, which means you have 30+ HTTP requests.
+The more requests means the poor performance of your website. 
+
+A common solution to this is using CSS sprites to combine multiple images into one.
+However, the maintainance cost of choosing this apporach is really expensive. 
+You always have to use some huge drawing software like Photoshop or Fireworks to maintain.
+And carefully using background-position, overflow: hidden, width, and height CSS attributes to make it work.
+A engineering industry shouldn't have such ridiculous process.
+
+DataURI transforms images to Base64 encodeed string.
+That means you have see a image without any HTTP Request.
+Though the file size blows to 2 to 3 times larger, GZip makes it worthy of the investment.
+And remember request is expensive than file size in most situation.
+
+The only thing we need to overcome is browser compatibility issues.
+Internet Explorer version before 8 doesn't support DataURI.
+However, something similar called MHTML can achieve the same effect.
+
+dataurize, the shell script transforms your CSS files into ones using DataURI and MHTML.
+Just one command, you can say goodbye to CSS sprites!
