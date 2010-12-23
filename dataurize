@@ -1,33 +1,96 @@
 #!/usr/bin/php
 <?php
 /**
- * dataurize - Command line interface for transforming image to DataURI tool.
+ * Command line interface for converting CSS file with background images to MHTML & DataURI.
  *
  * @author Joseph Chiang <josephj6802@gmail.com>
  * @package dataurize
- * @link http://muchiiilla.dlink.com.tw/projects/muchiii/wiki/Engineering/DataUrize
  *
- * ./dataurize ~/miiicasa/static/bar/layout-skin.css http://a.mimgs.com > /tmp/dataurize
+ * ./dataurize <input> <base> [--output]
  */
 
-$cmd  = $argv[0];
-$file = $argv[1];
-$base = $argv[2];
 
-if ( ! file_exists($file))
+function print_usage($path)
 {
-    echo "file not exists";
+    echo "Usage: dataurize <input> <base> [--output]\n" .
+         "\n";
     exit;
 }
 
+function handle_exception($ex)
+{
+    die("Error: ".$ex->getMessage()."\n");
+}
+
+
+set_exception_handler("handle_exception");
+
+// CONSTANTS
+define("SEPARATOR", "_MY_BOUNDARY_SEPARATOR");
+
+// Provide usage if user provides no arguments.
+$path = array_shift($argv);
+if ( ! count($argv))
+{
+    print_usage($path);
+    exit;
+}
+
+// Check if arguments is enough.
+if (count($argv) < 2)
+{
+    throw new Exception("You need at lease provide two arguments. One is for input file, and the other is for base URL.");
+}
+
+// Check if file exists.
+$file = array_shift($argv);
+if ( ! file_exists($file))
+{
+    throw new Exception("File you provide doesn't exist. Please check again.");
+}
+
+// Get base URL.
+$base = array_shift($argv);
+$is_show_only = FALSE;
+$output = $file;
+while ($arg = array_shift($argv))
+{
+    $num = preg_match('/(-{1,2}\w+)(=[\w_\.\/\-]+)*/', $arg, $matches);
+    if ( ! $num)
+    {
+        continue;
+    }
+    if (count($matches) === 3)
+    {
+        $val = str_replace("=", "", $matches[2]);
+    }
+    switch ($matches[1])
+    {
+    // Get output file.
+    case "-o":
+    case "--output":
+        $output = $val;
+        break;
+    case "--showonly":
+        $is_show_only = TRUE;
+        break;
+    case "-h":
+    case "--help":
+        print_usage($path);
+        exit;
+        break;
+    }
+}
+
+// Fetch all the background image attributes using RegExp.
 $content = file_get_contents($file);
-$pattern = '/background.*:.*url\(([^\)]+)\)/';
+$pattern = '/background[^;]*:[^;]*url\(([^\)]+)\)[^;]+/';
 preg_match_all($pattern, $content, $data);
 $attrs = $data[0];
 $urls = $data[1];
 $uris = array();
 
-// Build temporary directory 
+// Build temporary directory.
 $tmp_path = microtime();
 $tmp_path = substr(md5($tmp_path), 0, 8);
 $tmp_path = "/tmp/$tmp_path/";
@@ -35,26 +98,45 @@ mkdir($tmp_path);
 
 for ($i = 0, $j = count($attrs); $i < $j; $i++)
 {
+    // Make shortcuts.
     $url = $urls[$i];
     $attr = $attrs[$i];
+
+    // Get all the images files.
     $target = "{$base}{$url}";
     $filename = pathinfo($target);
     $filename = "{$filename["filename"]}.{$filename["extension"]}";
-    $cmd = "curl $target > {$tmp_path}{$filename}";
+    $cmd = "curl $target -s > {$tmp_path}{$filename}";
     exec($cmd, $return, $error);
+
+    // Get file MIME/TYPE.
     $tempfile = $tmp_path.$filename;
     $cmd = "/usr/bin/identify -quiet -format \"%m\" $tempfile";
-    exec("/usr/bin/identify -quiet -format \"%m\" $tempfile", $return, $error);                                    
+    exec($cmd, $return, $error);                                    
     $type = ($error === 0) ? mb_strtolower($return[0]) : ""; 
-    $handle = fopen($tempfile,'rb');
-    $file_content = fread($handle, filesize($tempfile));
-    fclose($handle);
-    $encode = /*chunk_split*/(base64_encode($file_content)); 
+
+    // Get both MHTML and DataURI strings.
+    $encode = base64_encode(file_get_contents($tempfile)); 
     $uris[$i] = str_replace($url, "data:image/$type;base64," . $encode, $attr);
-    $uris[$i].= ";*background-image:url(mhtml:{$base}{$file}!{$filename})"; 
-    $mhtmls[] = "Content-Location:{$filename}\nContent-Transfer-Encoding:base64\n\n" . $encode . "\n--_MY_BOUNDARY_SEPARATOR--\n";
+    $uris[$i].= ";*background-image:url(mhtml:{$base}{$output}!{$i})"; 
+    $mhtmls[] = "--" . SEPARATOR . "\nContent-Location:{$i}\nContent-Transfer-Encoding:base64\n\n" . $encode . "\n\n";
 }
-$content = "/*\nContent-Type: multipart/related; boundary=\"_MY_BOUNDARY_SEPARATOR\"\n\n--_MY_BOUNDARY_SEPARATOR\n" . implode($mhtmls, "") . "*/\n\n" . $content;
+
+// New CSS file content.
+$content = "/*\nContent-Type: multipart/related; boundary=\"" . SEPARATOR . "\"\n\n" . implode($mhtmls, "") . "--".SEPARATOR."--\n*/\n" . $content;
 $content = str_replace($attrs, $uris, $content);
-echo $content;
+
+// Remove temporary directory.
+$cmd = "rm -rf $tmp_path";
+exec($cmd, $return, $error);
+
+// Output to console directly.
+if ($is_show_only)
+{
+    echo $content . "\n";
+}
+else
+{
+    file_put_contents($output, $content);
+}
 ?>
