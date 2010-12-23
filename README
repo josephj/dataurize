@@ -19,4 +19,5 @@ Internet Explorer version before 8 doesn't support DataURI.
 However, something similar called MHTML can achieve the same effect.
 
 dataurize, the shell script transforms your CSS files into ones using DataURI and MHTML.
+And you don't have to worry about browser compatibility issue of course.
 Just one command, you can say goodbye to CSS sprites!
