@@ -1,7 +1,8 @@
 #!/usr/bin/php
 <?php
 /**
- * Command line interface for converting CSS file with background images to MHTML & DataURI.
+ * Command line interface for converting CSS file with background images into MHTML & DataURI using base64 encoding.
+ * So all separate HTTP requests for individual images will become only one request.
  *
  * @author Joseph Chiang <josephj6802@gmail.com>
  * @package dataurize
@@ -12,8 +13,14 @@
 
 function print_usage($path)
 {
-    echo "Usage: dataurize <input> <base> [--output]\n" .
+    echo "Usage: dataurize <input> <base> [options]\n" .
          "\n";
+    echo "    --output=<output>   Assign an output file. By default it overwrites your original file.\n";
+    echo "    --showonly          Show dataurized code in console instead of generating or overwriting a file.\n";
+    echo "    --separate=<output> Separate MHTML to a single file.\n";
+    echo "    --help              Show this help.\n" .
+         "\n";
+    echo "Sample: dataurize foo.css http://bar.com/ --output=foo2.css\n\n";
     exit;
 }
 
@@ -53,6 +60,7 @@ if ( ! file_exists($file))
 $base = array_shift($argv);
 $is_show_only = FALSE;
 $output = $file;
+$separate = false;
 while ($arg = array_shift($argv))
 {
     $num = preg_match('/(-{1,2}\w+)(=[\w_\.\/\-]+)*/', $arg, $matches);
@@ -70,6 +78,9 @@ while ($arg = array_shift($argv))
     case "-o":
     case "--output":
         $output = $val;
+        break;
+    case "--separate":
+        $separate = $val;
         break;
     case "--showonly":
         $is_show_only = TRUE;
@@ -103,7 +114,14 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     $attr = $attrs[$i];
 
     // Get all the images files.
-    $target = "{$base}{$url}";
+    if (strpos($url, "http") === 0)
+    {
+        $target = $url;
+    }
+    else
+    {
+        $target = "{$base}{$url}";
+    }
     $filename = pathinfo($target);
     $filename = "{$filename["filename"]}.{$filename["extension"]}";
     $cmd = "curl $target -s > {$tmp_path}{$filename}";
@@ -118,12 +136,16 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     // Get both MHTML and DataURI strings.
     $encode = base64_encode(file_get_contents($tempfile)); 
     $uris[$i] = str_replace($url, "data:image/$type;base64," . $encode, $attr);
-    $uris[$i].= ";*background-image:url(mhtml:{$base}{$output}!{$i})"; 
+    $uris[$i].= ($separate ? ";*background-image:url(mhtml:{$base}{$separate}!{$i})" : ";*background-image:url(mhtml:{$base}{$output}!{$i})"); 
+
     $mhtmls[] = "--" . SEPARATOR . "\nContent-Location:{$i}\nContent-Transfer-Encoding:base64\n\n" . $encode . "\n\n";
 }
 
 // New CSS file content.
-$content = "/*\nContent-Type: multipart/related; boundary=\"" . SEPARATOR . "\"\n\n" . implode($mhtmls, "") . "--".SEPARATOR."--\n*/\n" . $content;
+if ( ! $separate)
+{
+    $content = "/*\nContent-Type: multipart/related; boundary=\"" . SEPARATOR . "\"\n\n" . implode($mhtmls, "") . "--".SEPARATOR."--\n*/\n" . $content;
+}
 $content = str_replace($attrs, $uris, $content);
 
 // Remove temporary directory.
@@ -138,5 +160,10 @@ if ($is_show_only)
 else
 {
     file_put_contents($output, $content);
+    if ($separate)
+    {
+        $content = "/*\nContent-Type: multipart/related; boundary=\"" . SEPARATOR . "\"\n\n" . implode($mhtmls, "") . "--".SEPARATOR."--\n*/";
+        file_put_contents($separate, $content);
+    }
 }
 ?>
