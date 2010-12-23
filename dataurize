@@ -84,7 +84,7 @@ while ($arg = array_shift($argv))
 
 // Fetch all the background image attributes using RegExp.
 $content = file_get_contents($file);
-$pattern = '/background[^;]*:[^;]*url\(([^\)]+)\)[^;]+/';
+$pattern = '/background[^;}]*:[^;}]*url\(([^\)]+)\)[^;}]+/';
 preg_match_all($pattern, $content, $data);
 $attrs = $data[0];
 $urls = $data[1];
@@ -113,7 +113,7 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     $tempfile = $tmp_path.$filename;
     $cmd = "/usr/bin/identify -quiet -format \"%m\" $tempfile";
     exec($cmd, $return, $error);                                    
-    $type = ($error === 0) ? mb_strtolower($return[0]) : ""; 
+    $type = ($error === 0) ? mb_strtolower($return[0]) : "png"; 
 
     // Get both MHTML and DataURI strings.
     $encode = base64_encode(file_get_contents($tempfile)); 
