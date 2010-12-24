@@ -95,7 +95,7 @@ while ($arg = array_shift($argv))
 
 // Fetch all the background image attributes using RegExp.
 $content = file_get_contents($file);
-$pattern = '/background[^;}]*:[^;}]*url\(([^\)]+)\)[^;}]+/';
+$pattern = '/background[^:]*:[^;}]*url\(([^\)]+)\)[^;}]*/';
 preg_match_all($pattern, $content, $data);
 $attrs = $data[0];
 $urls = $data[1];
@@ -112,6 +112,16 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
 {
     // Make shortcuts.
     $url = $urls[$i];
+
+    // Normalize strings.
+    $url = str_replace('"', "", $url);
+
+    // Ignore original DataURIs.
+    if (strpos($url, "data") !== FALSE)
+    {
+        continue;
+    }
+
     $attr = $attrs[$i];
 
     // Get all the images files.
