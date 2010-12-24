@@ -100,6 +100,7 @@ preg_match_all($pattern, $content, $data);
 $attrs = $data[0];
 $urls = $data[1];
 $uris = array();
+$mhtmls = array();
 
 // Build temporary directory.
 $tmp_path = microtime();
@@ -124,17 +125,46 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     }
     $filename = pathinfo($target);
     $filename = "{$filename["filename"]}.{$filename["extension"]}";
-    $cmd = "curl $target -s > {$tmp_path}{$filename}";
-    exec($cmd, $return, $error);
+    try 
+    {
+        $cmd = "curl $target -s > {$tmp_path}{$filename}";
+        exec($cmd, $return, $error);
+        if ($error)
+        {
+            continue;
+        }
+    } 
+    catch (Exception $e) 
+    {
+        continue;
+    }
 
     // Get file MIME/TYPE.
     $tempfile = $tmp_path.$filename;
     $cmd = "/usr/bin/identify -quiet -format \"%m\" $tempfile";
-    exec($cmd, $return, $error);                                    
-    $type = ($error === 0) ? mb_strtolower($return[0]) : "png"; 
+    try 
+    {
+        exec($cmd, $return, $error);                                    
+        $type = ($error === 0) ? mb_strtolower($return[0]) : "png"; 
+        if ($error)
+        {
+            continue;
+        }
+    }
+    catch (Exception $e) 
+    {
+        continue;
+    }
 
     // Get both MHTML and DataURI strings.
-    $encode = base64_encode(file_get_contents($tempfile)); 
+    try
+    {
+        $encode = base64_encode(file_get_contents($tempfile)); 
+    }
+    catch (Exception $e) 
+    {
+        continue;
+    }
     $uris[$i] = str_replace($url, "data:image/$type;base64," . $encode, $attr);
     $uris[$i].= ($separate ? ";*background-image:url(mhtml:{$base}{$separate}!{$i})" : ";*background-image:url(mhtml:{$base}{$output}!{$i})"); 
 
@@ -166,4 +196,6 @@ else
         file_put_contents($separate, $content);
     }
 }
+
+exit;
 ?>
