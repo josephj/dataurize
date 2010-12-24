@@ -18,6 +18,7 @@ function print_usage($path)
     echo "    --output=<output>   Assign an output file. By default it overwrites your original file.\n";
     echo "    --showonly          Show dataurized code in console instead of generating or overwriting a file.\n";
     echo "    --separate=<output> Separate MHTML to a single file.\n";
+    echo "    --nomhtml          Don't use about MHTML. That means it only works on browsers which supports DataURI.\n";
     echo "    --help              Show this help.\n" .
          "\n";
     echo "Sample: dataurize foo.css http://bar.com/ --output=foo2.css\n\n";
@@ -59,6 +60,7 @@ if ( ! file_exists($file))
 // Get base URL.
 $base = array_shift($argv);
 $is_show_only = FALSE;
+$is_mhtml = TRUE;
 $output = $file;
 $separate = false;
 while ($arg = array_shift($argv))
@@ -84,6 +86,9 @@ while ($arg = array_shift($argv))
         break;
     case "--showonly":
         $is_show_only = TRUE;
+        break;
+    case "--nomhtml":
+        $is_mhtml = FALSE;
         break;
     case "-h":
     case "--help":
@@ -179,13 +184,23 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
         continue;
     }
     $uris[$i] = str_replace($url, "data:image/$type;base64," . $encode, $attr);
-    $uris[$i].= ($separate ? ";*background-image:url(mhtml:{$base}{$separate}!{$i})" : ";*background-image:url(mhtml:{$base}{$output}!{$i})"); 
+    if ($is_mhtml)
+    {
+        $uris[$i].= ($separate ? ";*background-image:url(mhtml:{$base}{$separate}!{$i})" : ";*background-image:url(mhtml:{$base}{$output}!{$i})"); 
+    }
+    else
+    {
+        $uris[$i].= ";*background-image:url($url);"; 
+    }
 
-    $mhtmls[] = "--" . SEPARATOR . "\nContent-Location:{$i}\nContent-Transfer-Encoding:base64\n\n" . $encode . "\n\n";
+    if ($is_mhtml)
+    {
+        $mhtmls[] = "--" . SEPARATOR . "\nContent-Location:{$i}\nContent-Transfer-Encoding:base64\n\n" . $encode . "\n\n";
+    }
 }
 
 // New CSS file content.
-if ( ! $separate)
+if ( ! $separate && $is_mhtml)
 {
     $content = "/*\nContent-Type: multipart/related; boundary=\"" . SEPARATOR . "\"\n\n" . implode($mhtmls, "") . "--".SEPARATOR."--\n*/\n" . $content;
 }
