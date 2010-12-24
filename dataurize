@@ -136,6 +136,7 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     } 
     catch (Exception $e) 
     {
+        echo $e->getMessage() . "\n";
         continue;
     }
 
@@ -153,6 +154,7 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     }
     catch (Exception $e) 
     {
+        echo $e->getMessage() . "\n";
         continue;
     }
 
@@ -163,6 +165,7 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     }
     catch (Exception $e) 
     {
+        echo $e->getMessage() . "\n";
         continue;
     }
     $uris[$i] = str_replace($url, "data:image/$type;base64," . $encode, $attr);
