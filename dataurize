@@ -128,6 +128,7 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     }
 
     $attr = $attrs[$i];
+    $attr = str_replace('"', "", $attr);
 
     // Get all the images files.
     if (strpos($url, "http") === 0)
@@ -183,7 +184,7 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
         echo $e->getMessage() . "\n";
         continue;
     }
-    $uris[$i] = str_replace($url, "data:image/$type;base64," . $encode, $attr);
+    $uris[$i] = str_replace($url, "\"data:image/$type;base64," . $encode . "\"", $attr);
     if ($is_mhtml)
     {
         $uris[$i].= ($separate ? ";*background-image:url(mhtml:{$base}{$separate}!{$i})" : ";*background-image:url(mhtml:{$base}{$output}!{$i})"); 
