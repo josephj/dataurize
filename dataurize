@@ -80,6 +80,7 @@ while ($arg = array_shift($argv))
     {
         continue;
     }
+    $val = (isset($matches[3]) ? $matches[3] : "");
 
     switch ($matches[1])
     {
@@ -112,10 +113,11 @@ while ($arg = array_shift($argv))
 $content = file_get_contents($input);
 $pattern = '/background[^:]*:[^;}]*url\(([^\)]+)\)[^;}]*/';
 preg_match_all($pattern, $content, $data);
-$attrs  = $data[0];
-$urls   = $data[1];
-$uris   = array();
-$mhtmls = array();
+$attrs   = $data[0];
+$urls    = $data[1];
+$uris    = array();
+$mhtmls  = array();
+$removes = array();
 
 // Build temporary directory.
 $tmp_path = microtime();
@@ -130,9 +132,9 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     $url  = str_replace(array("\"", "'"), array("", ""), $urls[$i]);
 
     // Ignore original DataURIs.
-    if (strpos($url, "data") !== FALSE)
+    if (strpos($url, "data:") === 0)
     {
-        array_splice($attrs, $i, 1);
+        $removes[] = $i;
         continue;
     }
 
@@ -144,14 +146,14 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     exec($cmd, $return, $error);
     if ($error)
     {
-        array_splice($attrs, $i, 1);
+        $removes[] = $i;
         continue;
     }
     
     // Ignore image exceeds file size limit.
     if (filesize($tmp_path.$filename) > $size_limit)
     {
-        array_splice($attrs, $i, 1);
+        $removes[] = $i;
         continue;
     }
 
@@ -161,7 +163,7 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     exec($cmd, $return, $error);                                    
     if ($error)
     {
-        array_splice($attrs, $i, 1);
+        $removes[] = $i;
         continue;
     }
     $type = mb_strtolower($return[0]);
@@ -173,12 +175,12 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     }
     catch (Exception $e) 
     {
-        array_splice($attrs, $i, 1);
+        $removes[] = $i;
         continue;
     }
 
     // Save DataURI strings into working array.
-    $mhtml_path = ($separate) ? $base . $separate : $base . $ouptut;
+    $mhtml_path = ($separate) ? $base . $separate : $base . $output;
     $uri        = str_replace($url, "\"data:image/$type;base64," . $encode . "\"", $attr);
     $url        = ($is_mhtml) ? "\"mhtml:{$mhtml_path}!{$i}\"" : $url;
     $uris[]     = $uri . ";*background-image:url($url);";
@@ -191,6 +193,10 @@ exec($cmd, $return, $error);
 
 // New CSS file content.
 $mhtml   = ($is_mhtml) ? "/*\nContent-Type: multipart/related; boundary=\"" . SEPARATOR . "\"\n\n" . implode($mhtmls, "") . "--".SEPARATOR."--\n*/\n" : "";
+for ($i = count($removes) - 1, $j = 0; $i >= $j; $i--)
+{
+    array_splice($attrs, $removes[$i], 1);
+}
 $content = str_replace($attrs, $uris, $content);
 if ($is_print)
 {
