@@ -13,15 +13,22 @@
 
 function print_usage($path)
 {
-    echo "Usage: dataurize <input> <base> [options]\n" .
+    echo "Usage: {$path} <input> <base> [options]\n" .
          "\n";
-    echo "    --output=<output>   Assign an output file. By default it overwrites your original file.\n";
-    echo "    --showonly          Show dataurized code in console instead of generating or overwriting a file.\n";
-    echo "    --separate=<output> Separate MHTML to a single file.\n";
-    echo "    --nomhtml          Don't use about MHTML. That means it only works on browsers which supports DataURI.\n";
-    echo "    --help              Show this help.\n" .
+    echo "    -o\n";
+    echo "    --output=<output>    Assign an output file. By default it overwrites your original file.\n";
+    echo "    --print              Print output directly instead of generating or overwriting a file.\n".
+         "                         By default, this option is disabled. \n";
+    echo "    --separate=<output>  Separate MHTML to a single file. By default, this option is disabled. \n";
+    echo "    --no-mhtml           Don't enable MHTML. Use this option if you don't want to use MHTML for legend IE.\n".
+         "                         It however doesn't hurt browser compatibility by adding *background-image(<Original Image Path>).\n".
+         "                         By default, this option is disabled.\n";
+    echo "    --size-limit=<bytes> It might still damage website performance if you transform an image with large file size.\n".
+         "                         The default file size is 1024 bytes.\n";
+    echo "    -h\n";
+    echo "    --help               Show this help.\n" .
          "\n";
-    echo "Sample: dataurize foo.css http://bar.com/ --output=foo2.css\n\n";
+    echo "Sample: {$path} foo.css http://bar.com/ --output=foo2.css\n\n";
     exit;
 }
 
@@ -30,50 +37,50 @@ function handle_exception($ex)
     die("Error: ".$ex->getMessage()."\n");
 }
 
-
 set_exception_handler("handle_exception");
 
-// CONSTANTS
+// Constants.
 define("SEPARATOR", "_MY_BOUNDARY_SEPARATOR");
 
-// Provide usage if user provides no arguments.
+// Provide usage if user provides no or insufficeient arguments.
 $path = array_shift($argv);
-if ( ! count($argv))
+if ( ! count($argv) || count($argv) < 2)
 {
     print_usage($path);
     exit;
 }
 
-// Check if arguments is enough.
-if (count($argv) < 2)
-{
-    throw new Exception("You need at lease provide two arguments. One is for input file, and the other is for base URL.");
-}
-
 // Check if file exists.
-$file = array_shift($argv);
-if ( ! file_exists($file))
+$input = array_shift($argv);
+if ( ! file_exists($input))
 {
     throw new Exception("File you provide doesn't exist. Please check again.");
 }
 
-// Get base URL.
-$base = array_shift($argv);
-$is_show_only = FALSE;
-$is_mhtml = TRUE;
-$output = $file;
-$separate = false;
+// Define option default values.
+$base = array_shift($argv);  // Base URL for relative paths in CSS content.
+$num  = preg_match('/(https?:\/\/[^\s+\"\<\>]+)/i', $base);
+if ( ! $num)
+{
+    throw new Exception("You must provide a URL which begins with 'http://' or 'https://'.");
+}
+
+$output       = $input;              // Output file.
+$size_limit   = 1024;                // Maximum image size.
+$is_print     = FALSE;               // Only print to console instead of making or overwritting an output file.
+$is_mhtml     = TRUE;                // Enable MHMTL support.
+$separate     = FALSE;               // Separate MHTML to a different file. (Mixed type)
+
+// Loops user inputs arguments.
 while ($arg = array_shift($argv))
 {
-    $num = preg_match('/(-{1,2}\w+)(=[\w_\.\/\-]+)*/', $arg, $matches);
+    // Check option format.
+    $num = preg_match('/(-{1,2}([^=]+))=*([^\s]+)*/', $arg, $matches);
     if ( ! $num)
     {
         continue;
     }
-    if (count($matches) === 3)
-    {
-        $val = str_replace("=", "", $matches[2]);
-    }
+
     switch ($matches[1])
     {
     // Get output file.
@@ -84,10 +91,13 @@ while ($arg = array_shift($argv))
     case "--separate":
         $separate = $val;
         break;
-    case "--showonly":
-        $is_show_only = TRUE;
+    case "--size-limit":
+        $size_limit = intval($val);
         break;
-    case "--nomhtml":
+    case "--print":
+        $is_print = TRUE;
+        break;
+    case "--no-mhtml":
         $is_mhtml = FALSE;
         break;
     case "-h":
@@ -99,12 +109,12 @@ while ($arg = array_shift($argv))
 }
 
 // Fetch all the background image attributes using RegExp.
-$content = file_get_contents($file);
+$content = file_get_contents($input);
 $pattern = '/background[^:]*:[^;}]*url\(([^\)]+)\)[^;}]*/';
 preg_match_all($pattern, $content, $data);
-$attrs = $data[0];
-$urls = $data[1];
-$uris = array();
+$attrs  = $data[0];
+$urls   = $data[1];
+$uris   = array();
 $mhtmls = array();
 
 // Build temporary directory.
@@ -115,115 +125,84 @@ mkdir($tmp_path);
 
 for ($i = 0, $j = count($attrs); $i < $j; $i++)
 {
-    // Make shortcuts.
-    $url = $urls[$i];
-
-    // Normalize strings.
-    $url = str_replace('"', "", $url);
+    // Make shortcut and normalize string.
+    $attr = str_replace(array("\"", "'"), array("", ""), $attrs[$i]);
+    $url  = str_replace(array("\"", "'"), array("", ""), $urls[$i]);
 
     // Ignore original DataURIs.
     if (strpos($url, "data") !== FALSE)
     {
+        array_splice($attrs, $i, 1);
         continue;
     }
 
-    $attr = $attrs[$i];
-    $attr = str_replace('"', "", $attr);
-
-    // Get all the images files.
-    if (strpos($url, "http") === 0)
-    {
-        $target = $url;
-    }
-    else
-    {
-        $target = "{$base}{$url}";
-    }
+    // Get images file using cURL.
+    $target = (strpos($url, "http") === 0 ? $url : $base . $url);
     $filename = pathinfo($target);
     $filename = "{$filename["filename"]}.{$filename["extension"]}";
-    try 
+    $cmd = "curl $target -s > {$tmp_path}{$filename}";
+    exec($cmd, $return, $error);
+    if ($error)
     {
-        $cmd = "curl $target -s > {$tmp_path}{$filename}";
-        exec($cmd, $return, $error);
-        if ($error)
-        {
-            continue;
-        }
-    } 
-    catch (Exception $e) 
+        array_splice($attrs, $i, 1);
+        continue;
+    }
+    
+    // Ignore image exceeds file size limit.
+    if (filesize($tmp_path.$filename) > $size_limit)
     {
-        echo $e->getMessage() . "\n";
+        array_splice($attrs, $i, 1);
         continue;
     }
 
     // Get file MIME/TYPE.
     $tempfile = $tmp_path.$filename;
     $cmd = "/usr/bin/identify -quiet -format \"%m\" $tempfile";
-    try 
+    exec($cmd, $return, $error);                                    
+    if ($error)
     {
-        exec($cmd, $return, $error);                                    
-        $type = ($error === 0) ? mb_strtolower($return[0]) : "png"; 
-        if ($error)
-        {
-            continue;
-        }
-    }
-    catch (Exception $e) 
-    {
-        echo $e->getMessage() . "\n";
+        array_splice($attrs, $i, 1);
         continue;
     }
+    $type = mb_strtolower($return[0]);
 
-    // Get both MHTML and DataURI strings.
+    // Get encoded string.
     try
     {
         $encode = base64_encode(file_get_contents($tempfile)); 
     }
     catch (Exception $e) 
     {
-        echo $e->getMessage() . "\n";
+        array_splice($attrs, $i, 1);
         continue;
     }
-    $uris[$i] = str_replace($url, "\"data:image/$type;base64," . $encode . "\"", $attr);
-    if ($is_mhtml)
-    {
-        $uris[$i].= ($separate ? ";*background-image:url(mhtml:{$base}{$separate}!{$i})" : ";*background-image:url(mhtml:{$base}{$output}!{$i})"); 
-    }
-    else
-    {
-        $uris[$i].= ";*background-image:url($url);"; 
-    }
 
-    if ($is_mhtml)
-    {
-        $mhtmls[] = "--" . SEPARATOR . "\nContent-Location:{$i}\nContent-Transfer-Encoding:base64\n\n" . $encode . "\n\n";
-    }
+    // Save DataURI strings into working array.
+    $mhtml_path = ($separate) ? $base . $separate : $base . $ouptut;
+    $uri        = str_replace($url, "\"data:image/$type;base64," . $encode . "\"", $attr);
+    $url        = ($is_mhtml) ? "\"mhtml:{$mhtml_path}!{$i}\"" : $url;
+    $uris[]     = $uri . ";*background-image:url($url);";
+    $mhtmls[]   = "--" . SEPARATOR . "\nContent-Location:{$i}\nContent-Transfer-Encoding:base64\n\n" . $encode . "\n\n";
 }
-
-// New CSS file content.
-if ( ! $separate && $is_mhtml)
-{
-    $content = "/*\nContent-Type: multipart/related; boundary=\"" . SEPARATOR . "\"\n\n" . implode($mhtmls, "") . "--".SEPARATOR."--\n*/\n" . $content;
-}
-$content = str_replace($attrs, $uris, $content);
 
 // Remove temporary directory.
 $cmd = "rm -rf $tmp_path";
 exec($cmd, $return, $error);
 
-// Output to console directly.
-if ($is_show_only)
+// New CSS file content.
+$mhtml   = ($is_mhtml) ? "/*\nContent-Type: multipart/related; boundary=\"" . SEPARATOR . "\"\n\n" . implode($mhtmls, "") . "--".SEPARATOR."--\n*/\n" : "";
+$content = str_replace($attrs, $uris, $content);
+if ($is_print)
 {
-    echo $content . "\n";
+    echo $mhtml . $content;
+    exit;
 }
-else
+if ($separate)
 {
+    file_put_contents($separate, $mhtml);
     file_put_contents($output, $content);
-    if ($separate)
-    {
-        $content = "/*\nContent-Type: multipart/related; boundary=\"" . SEPARATOR . "\"\n\n" . implode($mhtmls, "") . "--".SEPARATOR."--\n*/";
-        file_put_contents($separate, $content);
-    }
+} else {
+    file_put_contents($output, $mhtml . $content);
 }
 
 exit;
