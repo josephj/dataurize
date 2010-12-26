@@ -180,10 +180,10 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     }
 
     // Save DataURI strings into working array.
-    $mhtml_path = ($separate) ? $base . $separate : $base . $output;
+    $mhtml_path = ($separate) ? $base . $separate : $base . basename($output);
     $uri        = str_replace($url, "\"data:image/$type;base64," . $encode . "\"", $attr);
-    $url        = ($is_mhtml) ? "\"mhtml:{$mhtml_path}!{$i}\"" : $url;
-    $uris[]     = $uri . ";*background-image:url($url);";
+    $url        = ($is_mhtml) ? "mhtml:{$mhtml_path}!{$i}" : $url;
+    $uris[]     = $uri . ";*background-image:url($url)";
     $mhtmls[]   = "--" . SEPARATOR . "\nContent-Location:{$i}\nContent-Transfer-Encoding:base64\n\n" . $encode . "\n\n";
 }
 
