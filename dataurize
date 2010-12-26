@@ -64,6 +64,10 @@ if ( ! $num)
 {
     throw new Exception("You must provide a URL which begins with 'http://' or 'https://'.");
 }
+if (strrpos($base, "/") !== count($base) - 1) // Always add slash at end.
+{
+    $base .= "/";
+}
 
 $output       = $input;              // Output file.
 $size_limit   = 1024;                // Maximum image size.
@@ -139,6 +143,10 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     }
 
     // Get images file using cURL.
+    if (strpos($url, "/") === 0) 
+    {
+        $url = substr($url, 1);
+    }
     $target = (strpos($url, "http") === 0 ? $url : $base . $url);
     $filename = pathinfo($target);
     $filename = "{$filename["filename"]}.{$filename["extension"]}";
