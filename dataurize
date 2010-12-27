@@ -143,10 +143,7 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     }
 
     // Remove heading slash.
-    if (strpos($url, "/") === 0) 
-    {
-        $url2 = substr($url, 1);
-    }
+    $url2 = (strpos($url, "/") === 0) ? substr($url, 1) : $url;
 
     // Get images file using cURL.
     $target = (strpos($url, "http") === 0 ? $url : $base . $url2);
