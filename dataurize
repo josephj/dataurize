@@ -69,11 +69,11 @@ if (strrpos($base, "/") !== count($base) - 1) // Always add slash at end.
     $base .= "/";
 }
 
-$output       = $input;              // Output file.
-$size_limit   = 1024;                // Maximum image size.
-$is_print     = FALSE;               // Only print to console instead of making or overwritting an output file.
-$is_mhtml     = TRUE;                // Enable MHMTL support.
-$separate     = FALSE;               // Separate MHTML to a different file. (Mixed type)
+$output     = $input; // Output file.
+$size_limit = 1024;   // Maximum image size.
+$is_print   = FALSE;  // Only print to console instead of making or overwritting an output file.
+$is_mhtml   = TRUE;   // Enable MHMTL support.
+$separate   = FALSE;  // Separate MHTML to a different file. (Mixed type)
 
 // Loops user inputs arguments.
 while ($arg = array_shift($argv))
@@ -142,12 +142,14 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
         continue;
     }
 
-    // Get images file using cURL.
+    // Remove heading slash.
     if (strpos($url, "/") === 0) 
     {
-        $url = substr($url, 1);
+        $url2 = substr($url, 1);
     }
-    $target = (strpos($url, "http") === 0 ? $url : $base . $url);
+
+    // Get images file using cURL.
+    $target = (strpos($url, "http") === 0 ? $url : $base . $url2);
     $filename = pathinfo($target);
     $filename = "{$filename["filename"]}.{$filename["extension"]}";
     $cmd = "curl $target -s > {$tmp_path}{$filename}";
