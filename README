@@ -21,3 +21,21 @@ However, something similar called MHTML can achieve the same effect.
 dataurize, the shell script transforms your CSS files into ones using DataURI and MHTML.
 And you don't have to worry about browser compatibility issue of course.
 Just one command, you can say goodbye to CSS sprites!
+
+Usage: ./dataurize <input> <base> [options]
+
+    -o
+    --output=<output>    Assign an output file. By default it overwrites your original file.
+    --print              Print output directly instead of generating or overwriting a file.
+                         By default, this option is disabled.
+    --separate=<output>  Separate MHTML to a single file. By default, this option is disabled.
+    --no-mhtml           Don't enable MHTML. Use this option if you don't want to use MHTML for legend IE.
+                         It however doesn't hurt browser compatibility by adding *background-image(<Original Image Path>).
+                         By default, this option is disabled.
+    --size-limit=<bytes> It might still damage website performance if you transform an image with large file size.
+                         The default file size is 1024 bytes.
+    -h
+    --help               Show this help.
+
+Sample: ./dataurize foo.css http://bar.com/ --output=foo2.css
+
