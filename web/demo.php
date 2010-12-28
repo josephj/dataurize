@@ -44,6 +44,7 @@ if ($url && $base)
             exec($cmd, $return, $error);
             $content = implode($return, "\n");
         }
+        exec("rm -rf {$tmp_path}");
     }
 } else {
     $error = "CSS URL or base URL cannot be empty!";
