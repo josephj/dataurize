@@ -64,7 +64,7 @@ if ( ! $num)
 {
     throw new Exception("You must provide a URL which begins with 'http://' or 'https://'.");
 }
-if (strrpos($base, "/") !== count($base) - 1) // Always add slash at end.
+if (strrpos($base, "/") !== strlen($base) - 1) // Always add slash at end.
 {
     $base .= "/";
 }
