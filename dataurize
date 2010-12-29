@@ -223,7 +223,7 @@ foreach ($attrs as $attr)
         $uri    = str_replace($url, "\"data:image/$type;base64," . $encode . "\"", $attr);
         $url    = ($is_mhtml) ? "mhtml:{$mhtml_path}!{$key}" : $url;
         $uris[] = $uri . ";*background-image:url($url)";
-        $new_attrs = $attr;
+        $new_attrs[] = $attr;
         break;
     }
 
