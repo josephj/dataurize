@@ -83,6 +83,7 @@ form .error {
     font-size: 11px;
     font-family: Verdana;
     margin-top: 10px;
+    margin-bottom: 20px;
     width: 100%;
     height: 400px;
 }
