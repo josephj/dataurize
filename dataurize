@@ -148,8 +148,7 @@ foreach ($urls as $url)
 
     // Get images file using cURL.
     $target = (strpos($url, "http") === 0 ? $url : $base . $url2);
-    $filename = pathinfo($target);
-    $filename = "{$filename["filename"]}.{$filename["extension"]}";
+    $filename = basename($target);
     $cmd = "curl $target -s > {$tmp_path}{$filename}";
     exec($cmd, $return, $error);
     if ($error)
