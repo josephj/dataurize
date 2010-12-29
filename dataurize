@@ -197,6 +197,7 @@ foreach ($urls as $url)
     $i++;
 }
 
+$new_attrs = array();
 foreach ($attrs as $attr)
 {
     // Make shortcut and normalize string.
@@ -217,19 +218,15 @@ foreach ($attrs as $attr)
         $url    = $v["url"];
         $encode = $v["encode"];
         $type   = $v["type"];
+
+        // Save Data URI strings into working array.
+        $uri    = str_replace($url, "\"data:image/$type;base64," . $encode . "\"", $attr);
+        $url    = ($is_mhtml) ? "mhtml:{$mhtml_path}!{$key}" : $url;
+        $uris[] = $uri . ";*background-image:url($url)";
+        $new_attrs = $attr;
         break;
     }
 
-    // If nothing matches, this shouldn't happen.
-    if ( ! $encode)
-    {
-        continue;
-    }
-
-    // Save Data URI strings into working array.
-    $uri    = str_replace($url, "\"data:image/$type;base64," . $encode . "\"", $attr);
-    $url    = ($is_mhtml) ? "mhtml:{$mhtml_path}!{$key}" : $url;
-    $uris[] = $uri . ";*background-image:url($url)";
     //echo "/* {$target} : Encoded successfully. */\n";
 }
 
@@ -239,7 +236,7 @@ exec($cmd, $return, $error);
 
 // New CSS file content.
 $mhtml   = ($is_mhtml) ? "/*\nContent-Type: multipart/related; boundary=\"" . SEPARATOR . "\"\n\n" . implode($mhtmls, "") . "--".SEPARATOR."--\n*/\n" : "";
-$content = str_replace($attrs, $uris, $content);
+$content = str_replace($new_attrs, $uris, $content);
 if (function_exists('mb_strlen')) {
         $size = mb_strlen($mhtml . $content, '8bit');
 } else {
