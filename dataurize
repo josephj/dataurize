@@ -74,6 +74,7 @@ $size_limit = 1024;   // Maximum image size.
 $is_print   = FALSE;  // Only print to console instead of making or overwritting an output file.
 $is_mhtml   = TRUE;   // Enable MHMTL support.
 $separate   = FALSE;  // Separate MHTML to a different file. (Mixed type)
+$mhtml_path = ($separate) ? $base . $separate : $base . basename($output);
 
 // Loops user inputs arguments.
 while ($arg = array_shift($argv))
@@ -115,13 +116,15 @@ while ($arg = array_shift($argv))
 
 // Fetch all the background image attributes using RegExp.
 $content = file_get_contents($input);
+//echo "/* Original File Size: " . filesize($input) . " */\n";
 $pattern = '/background[^:]*:[^;}]*url\(([^\)]+)\)[^;}]*/';
 preg_match_all($pattern, $content, $data);
 $attrs   = $data[0];
 $urls    = $data[1];
+$urls    = array_unique($urls);
+$data    = array();
 $uris    = array();
 $mhtmls  = array();
-$removes = array();
 
 // Build temporary directory.
 $tmp_path = microtime();
@@ -129,16 +132,14 @@ $tmp_path = substr(md5($tmp_path), 0, 8);
 $tmp_path = "/tmp/$tmp_path/";
 mkdir($tmp_path);
 
-for ($i = 0, $j = count($attrs); $i < $j; $i++)
+$i = 0;
+foreach ($urls as $url)
 {
-    // Make shortcut and normalize string.
-    $attr = str_replace(array("\"", "'"), array("", ""), $attrs[$i]);
-    $url  = str_replace(array("\"", "'"), array("", ""), $urls[$i]);
+    $url  = str_replace(array("\"", "'"), array("", ""), $url);
 
     // Ignore original DataURIs.
     if (strpos($url, "data:") === 0)
     {
-        $removes[] = $i;
         continue;
     }
 
@@ -153,14 +154,14 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     exec($cmd, $return, $error);
     if ($error)
     {
-        $removes[] = $i;
+        //echo "/* {$target} : Error - File doesn't exists. */\n";
         continue;
     }
-    
+
     // Ignore image exceeds file size limit.
     if (filesize($tmp_path.$filename) > $size_limit)
     {
-        $removes[] = $i;
+        //echo "/* {$target} : Error - File size is too large. */\n";
         continue;
     }
 
@@ -170,7 +171,7 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     exec($cmd, $return, $error);                                    
     if ($error)
     {
-        $removes[] = $i;
+        //echo "/* {$target} : Error - MIME/TYPE detection unknown error. */\n";
         continue;
     }
     $type = mb_strtolower($return[0]);
@@ -182,16 +183,54 @@ for ($i = 0, $j = count($attrs); $i < $j; $i++)
     }
     catch (Exception $e) 
     {
-        $removes[] = $i;
+        //echo "/* {$target} : Error - Encoding unknown error. */\n";
         continue;
     }
 
-    // Save DataURI strings into working array.
-    $mhtml_path = ($separate) ? $base . $separate : $base . basename($output);
-    $uri        = str_replace($url, "\"data:image/$type;base64," . $encode . "\"", $attr);
-    $url        = ($is_mhtml) ? "mhtml:{$mhtml_path}!{$i}" : $url;
-    $uris[]     = $uri . ";*background-image:url($url)";
-    $mhtmls[]   = "--" . SEPARATOR . "\nContent-Location:{$i}\nContent-Transfer-Encoding:base64\n\n" . $encode . "\n\n";
+    $data[] = array(
+        "url"    => $url,
+        "encode" => $encode,
+        "type"   => $type,
+    );
+
+    $mhtmls[] = "--" . SEPARATOR . "\nContent-Location:{$i}\nContent-Transfer-Encoding:base64\n\n" . $encode . "\n\n";
+    $i++;
+}
+
+foreach ($attrs as $attr)
+{
+    // Make shortcut and normalize string.
+    $attr = str_replace(array("\"", "'"), array("", ""), $attr);
+
+    // Match URL.
+    $key    = "";
+    $url    = "";
+    $encode = "";
+    $type   = "";
+    foreach ($data as $k => $v)
+    {
+        if (strpos($attr, $v["url"]) === FALSE)
+        {
+            continue;
+        }
+        $key    = $k;
+        $url    = $v["url"];
+        $encode = $v["encode"];
+        $type   = $v["type"];
+        break;
+    }
+
+    // If nothing matches, this shouldn't happen.
+    if ( ! $encode)
+    {
+        continue;
+    }
+
+    // Save Data URI strings into working array.
+    $uri    = str_replace($url, "\"data:image/$type;base64," . $encode . "\"", $attr);
+    $url    = ($is_mhtml) ? "mhtml:{$mhtml_path}!{$key}" : $url;
+    $uris[] = $uri . ";*background-image:url($url)";
+    //echo "/* {$target} : Encoded successfully. */\n";
 }
 
 // Remove temporary directory.
@@ -200,16 +239,19 @@ exec($cmd, $return, $error);
 
 // New CSS file content.
 $mhtml   = ($is_mhtml) ? "/*\nContent-Type: multipart/related; boundary=\"" . SEPARATOR . "\"\n\n" . implode($mhtmls, "") . "--".SEPARATOR."--\n*/\n" : "";
-for ($i = count($removes) - 1, $j = 0; $i >= $j; $i--)
-{
-    array_splice($attrs, $removes[$i], 1);
-}
 $content = str_replace($attrs, $uris, $content);
+if (function_exists('mb_strlen')) {
+        $size = mb_strlen($mhtml . $content, '8bit');
+} else {
+        $size = strlen($mhtml . $content);
+}
 if ($is_print)
 {
     echo $mhtml . $content;
+    //echo "/* Output File Size: " . $size . " */\n";
     exit;
 }
+
 if ($separate)
 {
     file_put_contents($separate, $mhtml);
