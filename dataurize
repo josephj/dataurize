@@ -74,7 +74,6 @@ $size_limit = 1024;   // Maximum image size.
 $is_print   = FALSE;  // Only print to console instead of making or overwritting an output file.
 $is_mhtml   = TRUE;   // Enable MHMTL support.
 $separate   = FALSE;  // Separate MHTML to a different file. (Mixed type)
-$mhtml_path = ($separate) ? $base . $separate : $base . basename($output);
 
 // Loops user inputs arguments.
 while ($arg = array_shift($argv))
@@ -114,6 +113,8 @@ while ($arg = array_shift($argv))
     }
 }
 
+// Get MHTML file path.
+$mhtml_path = ($separate) ? $base . $separate : $base . basename($output);
 // Fetch all the background image attributes using RegExp.
 $content = file_get_contents($input);
 //echo "/* Original File Size: " . filesize($input) . " */\n";
