@@ -228,8 +228,7 @@ foreach ($attrs as $attr)
         $new_attrs[] = $attr;
         break;
     }
-
-    //echo "/* {$target} : Encoded successfully. */\n";
+    $i++;
 }
 
 // Remove temporary directory.
