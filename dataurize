@@ -118,10 +118,11 @@ $mhtml_path = ($separate) ? $base . $separate : $base . basename($output);
 // Fetch all the background image attributes using RegExp.
 $content = file_get_contents($input);
 //echo "/* Original File Size: " . filesize($input) . " */\n";
-$pattern = '/background[^:]*:[^;}]*url\(([^\)]+)\)[^;}]*/';
+$pattern = '/background[^:]*:[^;}]*url\(([^\)]+)\)([^;}]*)/';
 preg_match_all($pattern, $content, $data);
 $attrs   = $data[0];
 $urls    = $data[1];
+$props   = $data[2];
 $urls    = array_unique($urls);
 $data    = array();
 $uris    = array();
@@ -198,6 +199,7 @@ foreach ($urls as $url)
 }
 
 $new_attrs = array();
+$i = 0;
 foreach ($attrs as $attr)
 {
     // Make shortcut and normalize string.
@@ -222,7 +224,7 @@ foreach ($attrs as $attr)
         // Save Data URI strings into working array.
         $uri    = str_replace($url, "\"data:image/$type;base64," . $encode . "\"", $attr);
         $url    = ($is_mhtml) ? "mhtml:{$mhtml_path}!{$key}" : $url;
-        $uris[] = $uri . ";*background-image:url($url)";
+        $uris[] = $uri . ";*background:url($url){$props[$i]}";
         $new_attrs[] = $attr;
         break;
     }
