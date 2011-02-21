@@ -1,8 +1,8 @@
 dataurize, Tool Replacing CSS Background Images to Data URI and MTHML 
 =====================================================================
 
-Problem
--------
+About
+-----
 Using Data URI instead of binary images is a very good idea in web development. One binary image 
 means an extra HTTP request in your request. It's easy to have 30+ images on a single page, 
 which means you have 30+ HTTP requests. The more requests means the poor performance of your website. 
@@ -20,8 +20,6 @@ is expensive than file size in most of situations.
 The only thing we need to take care is browser compatibility issues. Internet Explorer version before 8 doesn't 
 support Data URI. However, something similar called MHTML make it up.
 
-About
------
 dataurize is a simple PHP script converting your tranditional CSS file to 
 the one using Data URI and MHTML.  You don't have to worry about browser compatibility
 because it also attaches equivalent MHTML into your target CSS.
