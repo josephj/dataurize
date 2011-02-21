@@ -44,3 +44,8 @@ Syntax
         --help               Show this help.
 
     Sample: ./dataurize foo.css http://bar.com/ --output=foo2.css
+
+Demo
+----
+
+You can try dataurize Web Interface to convert a CSS file of your website. [dataurize Web Interface](http://josephj.com/lab/dataurize/web/demo.php).
