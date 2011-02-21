@@ -22,6 +22,10 @@ dataurize is a simple PHP script converting your tranditional CSS file to
 the one using Data URI and MHTML.  You don't have to worry about browser compatibility
 because it also attaches equivalent MHTML into your target CSS.
 
+Demo
+----
+You can try [dataurize Web Interface](http://josephj.com/lab/dataurize/web/demo.php) to convert a CSS file of your website.
+
 Dependencies
 ------------
  * ImageMagick 6.3.7+
@@ -51,10 +55,6 @@ Syntax
         --help               Show this help.
 
     Sample: ./dataurize foo.css http://bar.com/ --output=foo2.css
-
-Demo
-----
-You can try [dataurize Web Interface](http://josephj.com/lab/dataurize/web/demo.php) to convert a CSS file of your website.
 
 Note
 ----
