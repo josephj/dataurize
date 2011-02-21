@@ -58,8 +58,12 @@ You can try [dataurize Web Interface](http://josephj.com/lab/dataurize/web/demo.
 
 Note
 ----
-Currently all CSS file in miiiCasa.com executes this script before deployment. 
-Our best practice is not converting large images which more than 5 KB.
-Page onload time really decreases.
+Currently all CSS files in miiiCasa.com are *dataurized* by this script before deployment. 
+Our best practice is not converting images which is larger than 5 KB.
+Or it causes CSS file size becomes too large to be affordable.
 
     $ dataurize <input> <base> --size-limit=5120
+
+Known Issue
+-----------
+None.
