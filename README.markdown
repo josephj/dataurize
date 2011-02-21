@@ -1,8 +1,6 @@
 dataurize, Tool Replacing CSS Background Images to Data URI and MTHML 
 =====================================================================
 
-About
------
 Using Data URI instead of binary images is a very good idea in web development. One binary image 
 means an extra HTTP request in your request. It's easy to have 30+ images on a single page, 
 which means you have 30+ HTTP requests. The more requests means the poor performance of your website. 
