@@ -157,9 +157,9 @@ foreach ($urls as $url)
 
     // Remove heading slash.
     $url2         = (strpos($url, "/") === 0) ? substr($url, 1) : $url;
-    $has_protocal = (strpos($url, "http") === 0);
-    $target       = ($has_protocal) ? $url : $base . $url;
-    $use_curl     = ($has_prototol) ? TRUE : ( ! $is_local);
+    $has_protocol = (strpos($url, "http") === 0) ? TRUE : FALSE;
+    $target       = ($has_protocol) ? $url : $base . $url;
+    $use_curl     = ($has_protocol) ? TRUE : ( ! $is_local);
     $target       = (strpos($url, "http") === 0 ? $url : $base . $url2);
     $filename     = basename($target);
 
