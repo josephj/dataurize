@@ -58,11 +58,19 @@ if ( ! file_exists($input))
 }
 
 // Define option default values.
-$base = array_shift($argv);  // Base URL for relative paths in CSS content.
-$num  = preg_match('/(https?:\/\/[^\s+\"\<\>]+)/i', $base);
+$base     = array_shift($argv);  // Base URL for relative paths in CSS content.
+$num      = preg_match('/(https?:\/\/[^\s+\"\<\>]+)/i', $base);
+$is_local = FALSE;
 if ( ! $num)
 {
-    throw new Exception("You must provide a URL which begins with 'http://' or 'https://'.");
+    if (file_exists($base) && is_dir($base))
+    {
+        $is_local = TRUE;
+    }
+    else
+    {
+        throw new Exception("You must provide a URL or a directory path.");
+    }
 }
 if (strrpos($base, "/") !== strlen($base) - 1) // Always add slash at end.
 {
@@ -125,10 +133,10 @@ $types       = $data[1];
 $props_start = $data[2];
 $urls        = $data[3];
 $props_end   = $data[4];
-$urls    = array_unique($urls);
-$data    = array();
-$uris    = array();
-$mhtmls  = array();
+$urls        = array_unique($urls);
+$data        = array();
+$uris        = array();
+$mhtmls      = array();
 
 // Build temporary directory.
 $tmp_path = microtime();
@@ -148,12 +156,17 @@ foreach ($urls as $url)
     }
 
     // Remove heading slash.
-    $url2 = (strpos($url, "/") === 0) ? substr($url, 1) : $url;
+    $url2         = (strpos($url, "/") === 0) ? substr($url, 1) : $url;
+    $has_protocal = (strpos($url, "http") === 0);
+    $target       = ($has_protocal) ? $url : $base . $url;
+    $use_curl     = ($has_prototol) ? TRUE : ( ! $is_local);
+    $target       = (strpos($url, "http") === 0 ? $url : $base . $url2);
+    $filename     = basename($target);
 
-    // Get images file using cURL.
-    $target = (strpos($url, "http") === 0 ? $url : $base . $url2);
-    $filename = basename($target);
-    $cmd = "curl $target -s > {$tmp_path}{$filename}";
+    // Get file content.
+    $cmd = ($use_curl) ?
+           "curl $target -s > {$tmp_path}{$filename}" :
+           "cp $target {$tmp_path}{$filename}";
     exec($cmd, $return, $error);
     if ($error)
     {
@@ -171,7 +184,7 @@ foreach ($urls as $url)
     // Get file MIME/TYPE.
     $tempfile = $tmp_path.$filename;
     $cmd = "/usr/bin/identify -quiet -format \"%m\" $tempfile";
-    exec($cmd, $return, $error);                                    
+    exec($cmd, $return, $error);
     if ($error)
     {
         //echo "/* {$target} : Error - MIME/TYPE detection unknown error. */\n";
@@ -182,9 +195,9 @@ foreach ($urls as $url)
     // Get encoded string.
     try
     {
-        $encode = base64_encode(file_get_contents($tempfile)); 
+        $encode = base64_encode(file_get_contents($tempfile));
     }
-    catch (Exception $e) 
+    catch (Exception $e)
     {
         //echo "/* {$target} : Error - Encoding unknown error. */\n";
         continue;
