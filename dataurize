@@ -164,10 +164,23 @@ foreach ($urls as $url)
     $filename     = basename($target);
 
     // Get file content.
-    $cmd = ($use_curl) ?
-           "curl $target -s > {$tmp_path}{$filename}" :
-           "cp $target {$tmp_path}{$filename}";
-    exec($cmd, $return, $error);
+    if ($use_curl)
+    {
+        $cmd = "curl $target -s > {$tmp_path}{$filename}";
+        exec($cmd, $return, $error);
+    }
+    else
+    {
+        if (file_exists($tmp_path . $filename))
+        {
+            $cmd = "cp $target {$tmp_path}{$filename}";
+            exec($cmd, $return, $error);
+        }
+        else
+        {
+            continue;
+        }
+    }
     if ($error)
     {
         //echo "/* {$target} : Error - File doesn't exists. */\n";
