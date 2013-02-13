@@ -4,7 +4,7 @@ A command-line tool that replaces CSS background image to both Data URI and MTHM
 
 ## Warning
 
-After Microsoft published a hotfix for "[Vulnerability in MHTML Could Allow Information Disclosure (2544893)](http://technet.microsoft.com/en-us/security/bulletin/ms11-037)", MHTML became no longer works in IE browser. That means you should only use dataurize to convert background image to Data URI. Or uses better CSS Sprite technology like Compass.
+After Microsoft published a hotfix for "[Vulnerability in MHTML Could Allow Information Disclosure (2544893)](http://technet.microsoft.com/en-us/security/bulletin/ms11-037)", MHTML became no longer working in legend IE browsers. That means you should only use dataurize to convert background image to Data URI, or jump to use better CSS Sprite technologies like Compass.
 
 ## Why 
 
@@ -14,9 +14,7 @@ Using Data URI instead of binary images is a very good idea in web development. 
 
 ### Comparing with CSS Sprites
 
-A common solution to this is CSS Sprites, combining multiple images into one.
-However, the maintenance cost of choosing this apporach is really expensive. 
-You always have to use some softwares like Photoshop or Fireworks to maintain.
+A common solution to this is CSS Sprites, combining multiple images into one. However, the maintenance cost of choosing this apporach is really expensive. You always have to use some softwares like Photoshop or Fireworks to maintain.
 And carefully using CSS attributes like background-position, overflow: hidden, width, and height to make it work. A engineering industry shouldn't have such ridiculous development process.
 
 ### What is Data URI
