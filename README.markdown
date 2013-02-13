@@ -2,6 +2,10 @@
 
 A command-line tool that replaces CSS background image to both Data URI and MTHML .
 
+## Warning
+
+After Microsoft published a hotfix for "[Vulnerability in MHTML Could Allow Information Disclosure (2544893)](http://technet.microsoft.com/en-us/security/bulletin/ms11-037)", MHTML became no longer works in IE browser. That means you should only use dataurize to convert background image to Data URI. Or uses better CSS Sprite technology like Compass.
+
 ## Why 
 
 ### Performance
