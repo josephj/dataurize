@@ -1,6 +1,6 @@
 # dataurize
 
-A command-line tool that replaces CSS background image to both Data URI and MTHML .
+A command-line tool that replaces CSS background image to both Data URI and MHTML.
 
 ## Warning
 
