@@ -15,11 +15,11 @@ However, the maintenance cost of choosing this apporach is really expensive.
 You always have to use some softwares like Photoshop or Fireworks to maintain.
 And carefully using CSS attributes like background-position, overflow: hidden, width, and height to make it work. A engineering industry shouldn't have such ridiculous development process.
 
-## What is Data URI
+### What is Data URI
 
 Data URI transforms image to Base64 encodeed string. That means you can have a image without any HTTP Request. Though the file size blows to 2 to 3 times larger, proper GZip makes it worthy of the investment. And remember request is expensive than file size in most of situations.
 
-## MHTML - Alternative Solution for Legend Browsers
+### MHTML - Alternative Solution for Legend Browsers
 
 The only thing we need to take care is browser compatibility issues. Internet Explorer version before 8 doesn't support Data URI. However, something similar called MHTML makes it up.
 
